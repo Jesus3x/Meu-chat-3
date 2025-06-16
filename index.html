@@ -3,58 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Meu Chat PWA</title>
+  <title>Chat Firebase - Estilo WhatsApp</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#075e54" />
+
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Seu CSS igual ao que me enviou, estilo WhatsApp */
+    * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #ece5dd;
+      max-width: 600px;
+      margin: auto;
+      padding: 0;
       display: flex;
       flex-direction: column;
       height: 100vh;
-      max-width: 600px;
-      margin: auto;
     }
-    header {
+    h2 {
       background: #075e54;
       color: white;
-      padding: 15px;
-      text-align: center;
+      margin: 0;
+      padding: 15px 20px;
+      font-weight: normal;
       font-size: 1.3rem;
-    }
-    #login {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-    #login input, #login button {
-      padding: 10px;
-      margin: 10px 0;
-      width: 80%;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    #login input[type="file"] {
-      border: none;
-    }
-    #login button {
-      background: #075e54;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    #chat {
-      flex: 1;
-      display: none;
-      flex-direction: column;
+      text-align: center;
+      user-select: none;
     }
     #messages {
       flex: 1;
@@ -67,163 +45,230 @@
     }
     .msg {
       max-width: 75%;
-      padding: 10px;
-      border-radius: 10px;
-      background: white;
-      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 15px;
+      line-height: 1.4;
       position: relative;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      word-wrap: break-word;
+      box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
     }
     .msg.sent {
-      background: #dcf8c6;
+      background-color: #dcf8c6;
       align-self: flex-end;
+      border-bottom-right-radius: 0;
+      text-align: right;
+      color: #000;
     }
-    .msg img {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      object-fit: cover;
+    .msg.received {
+      background-color: white;
+      align-self: flex-start;
+      border-bottom-left-radius: 0;
+      color: #000;
     }
-    .msg .text {
-      flex: 1;
+    .msg .name {
+      font-weight: bold;
+      color: #075e54;
+      display: block;
+      margin-bottom: 4px;
     }
+    .msg .time {
+      font-size: 0.7em;
+      color: #666;
+      margin-top: 6px;
+      display: inline-block;
+      opacity: 0.7;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: #cc0000;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 18px;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+      user-select: none;
+    }
+    .delete-btn:hover { opacity: 1; }
     .input-area {
       display: flex;
-      padding: 10px;
-      background: #f0f0f0;
+      padding: 10px 15px;
+      background-color: #f0f0f0;
       gap: 10px;
+      align-items: center;
+      user-select: none;
     }
-    .input-area input {
+    .input-area input[type="text"] {
       flex: 1;
-      padding: 10px;
+      padding: 12px 15px;
       border-radius: 20px;
       border: 1px solid #ccc;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.3s ease;
     }
+    .input-area input[type="text"]:focus { border-color: #075e54; }
     .input-area button {
-      background: #075e54;
-      color: white;
+      background-color: #075e54;
       border: none;
       border-radius: 50%;
       width: 42px;
       height: 42px;
-      font-size: 20px;
+      color: white;
+      font-size: 22px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s ease;
     }
-    #sair {
-      background: #ccc;
-      color: #000;
-      border: none;
-      padding: 8px 15px;
-      margin: 5px;
-      border-radius: 8px;
-      align-self: flex-end;
-      cursor: pointer;
+    .input-area button:hover { background-color: #128c7e; }
+    #username {
+      margin: 10px 15px;
+      padding: 10px 15px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      outline: none;
+      width: calc(100% - 30px);
+      transition: border-color 0.3s ease;
+    }
+    #username:focus { border-color: #075e54; }
+    #messages::-webkit-scrollbar {
+      width: 8px;
+    }
+    #messages::-webkit-scrollbar-thumb {
+      background-color: rgba(7, 94, 84, 0.4);
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <header>💬 Meu Chat PWA</header>
+  <h2>💬 Chat em Tempo Real</h2>
 
-  <div id="login">
-    <input type="text" id="nome" placeholder="Seu nome" />
-    <input type="file" id="foto" accept="image/*" />
-    <button onclick="entrar()">Entrar</button>
-  </div>
+  <input type="text" id="username" placeholder="Seu nome" autocomplete="off" />
 
-  <div id="chat">
-    <div id="messages"></div>
-    <div class="input-area">
-      <input type="text" id="mensagem" placeholder="Digite uma mensagem" />
-      <button onclick="enviar()">➤</button>
-    </div>
-    <button id="sair" onclick="logout()">Sair</button>
+  <div id="messages"></div>
+
+  <div class="input-area">
+    <input type="text" id="message" placeholder="Digite uma mensagem" autocomplete="off" />
+    <button onclick="sendMessage()" aria-label="Enviar mensagem">➤</button>
   </div>
 
   <script>
+    // Configuração Firebase
     const firebaseConfig = {
-      apiKey: "SUA_API_KEY",
-      authDomain: "SEU_AUTH_DOMAIN",
-      projectId: "SEU_PROJECT_ID",
-      databaseURL: "https://chat-trader-default-rtdb.firebaseio.com"
+      apiKey: "AIzaSyDAYD7DhRovj0PYHUSpOq5YE1rQXIiOPkc",
+      authDomain: "chat-trader.firebaseapp.com",
+      projectId: "chat-trader",
+      storageBucket: "chat-trader.firebasestorage.app",
+      messagingSenderId: "722204996123",
+      appId: "1:722204996123:web:3b0cf65b13969d01e0bebe",
+      measurementId: "G-1PD8VJJH3E"
     };
 
+    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref("mensagens");
+    const db = firebase.database();
+    const messagesRef = db.ref("messages");
 
-    const nomeInput = document.getElementById('nome');
-    const fotoInput = document.getElementById('foto');
-    const loginDiv = document.getElementById('login');
-    const chatDiv = document.getElementById('chat');
-    const mensagemInput = document.getElementById('mensagem');
-    const messagesDiv = document.getElementById('messages');
+    // Formata timestamp para hora:minuto
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
-    function entrar() {
-      const nome = nomeInput.value.trim();
-      const file = fotoInput.files[0];
-      if (!nome || !file) {
-        alert("Preencha o nome e selecione uma foto.");
+    function sendMessage() {
+      const usernameInput = document.getElementById("username");
+      const messageInput = document.getElementById("message");
+
+      const username = usernameInput.value.trim();
+      const message = messageInput.value.trim();
+
+      if (!username) {
+        alert("Por favor, preencha seu nome.");
+        usernameInput.focus();
         return;
       }
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        localStorage.setItem("nome", nome);
-        localStorage.setItem("foto", e.target.result);
-        mostrarChat();
-      };
-      reader.readAsDataURL(file);
+      if (!message) {
+        alert("Por favor, digite uma mensagem.");
+        messageInput.focus();
+        return;
+      }
+
+      messagesRef.push({
+        name: username,
+        text: message,
+        time: Date.now()
+      });
+
+      messageInput.value = "";
+      messageInput.focus();
     }
 
-    function mostrarChat() {
-      loginDiv.style.display = "none";
-      chatDiv.style.display = "flex";
-    }
+    // Renderiza cada mensagem no container
+    function renderMessage(key, msg) {
+      const container = document.getElementById("messages");
+      const username = document.getElementById("username").value.trim();
+      const isSent = username && msg.name === username;
 
-    function enviar() {
-      const texto = mensagemInput.value.trim();
-      if (!texto) return;
-      const nome = localStorage.getItem("nome");
-      const foto = localStorage.getItem("foto");
-      db.push({ nome, foto, texto, tempo: Date.now() });
-      mensagemInput.value = "";
-    }
+      // Evitar duplicar mensagem (se já existe, retorna)
+      if(document.getElementById(key)) return;
 
-    db.on("child_added", snap => {
-      const msg = snap.val();
-      const nome = localStorage.getItem("nome");
-      const foto = msg.foto || "";
       const msgEl = document.createElement("div");
-      msgEl.className = "msg " + (msg.nome === nome ? "sent" : "received");
+      msgEl.className = "msg " + (isSent ? "sent" : "received");
+      msgEl.id = key;
 
-      const img = document.createElement("img");
-      img.src = foto;
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "name";
+      nameSpan.textContent = msg.name;
 
-      const text = document.createElement("div");
-      text.className = "text";
-      text.innerHTML = `<strong>${msg.nome}</strong><br>${msg.texto}`;
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "time";
+      timeSpan.textContent = formatTime(msg.time || Date.now());
 
-      msgEl.appendChild(img);
-      msgEl.appendChild(text);
-      messagesDiv.appendChild(msgEl);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      const del = document.createElement("button");
+      del.className = "delete-btn";
+      del.textContent = "×";
+      del.title = "Deletar";
+      // Permite apagar só se for dono da mensagem
+      del.style.display = isSent ? "block" : "none";
+      del.onclick = () => {
+        if (confirm("Apagar esta mensagem?")) {
+          messagesRef.child(key).remove();
+        }
+      };
+
+      const textDiv = document.createElement("div");
+      textDiv.className = "text";
+      textDiv.textContent = msg.text;
+
+      msgEl.appendChild(nameSpan);
+      msgEl.appendChild(timeSpan);
+      msgEl.appendChild(del);
+      msgEl.appendChild(textDiv);
+
+      container.appendChild(msgEl);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    messagesRef.on("child_added", snap => renderMessage(snap.key, snap.val()));
+    messagesRef.on("child_removed", snap => {
+      const msg = document.getElementById(snap.key);
+      if (msg) msg.remove();
     });
-
-    function logout() {
-      localStorage.clear();
-      location.reload();
-    }
-
-    if (localStorage.getItem("nome") && localStorage.getItem("foto")) {
-      mostrarChat();
-    }
   </script>
 
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado!'))
+        .catch(err => console.error('Erro no Service Worker:', err));
     }
   </script>
 </body>
-  </html>
-  
+</html>
