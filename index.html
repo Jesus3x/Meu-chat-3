@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meu Chat PWA</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#075e54" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #ece5dd;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 600px;
+      margin: auto;
+    }
+    header {
+      background: #075e54;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.3rem;
+    }
+    #login {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    #login input, #login button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 80%;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    #login input[type="file"] {
+      border: none;
+    }
+    #login button {
+      background: #075e54;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #chat {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+    }
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      background: url('https://i.imgur.com/8t5VNtG.png') repeat;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .msg {
+      max-width: 75%;
+      padding: 10px;
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .msg.sent {
+      background: #dcf8c6;
+      align-self: flex-end;
+    }
+    .msg img {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .msg .text {
+      flex: 1;
+    }
+    .input-area {
+      display: flex;
+      padding: 10px;
+      background: #f0f0f0;
+      gap: 10px;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+    .input-area button {
+      background: #075e54;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    #sair {
+      background: #ccc;
+      color: #000;
+      border: none;
+      padding: 8px 15px;
+      margin: 5px;
+      border-radius: 8px;
+      align-self: flex-end;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>💬 Meu Chat PWA</header>
+
+  <div id="login">
+    <input type="text" id="nome" placeholder="Seu nome" />
+    <input type="file" id="foto" accept="image/*" />
+    <button onclick="entrar()">Entrar</button>
+  </div>
+
+  <div id="chat">
+    <div id="messages"></div>
+    <div class="input-area">
+      <input type="text" id="mensagem" placeholder="Digite uma mensagem" />
+      <button onclick="enviar()">➤</button>
+    </div>
+    <button id="sair" onclick="logout()">Sair</button>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_AUTH_DOMAIN",
+      projectId: "SEU_PROJECT_ID",
+      databaseURL: "https://chat-trader-default-rtdb.firebaseio.com"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref("mensagens");
+
+    const nomeInput = document.getElementById('nome');
+    const fotoInput = document.getElementById('foto');
+    const loginDiv = document.getElementById('login');
+    const chatDiv = document.getElementById('chat');
+    const mensagemInput = document.getElementById('mensagem');
+    const messagesDiv = document.getElementById('messages');
+
+    function entrar() {
+      const nome = nomeInput.value.trim();
+      const file = fotoInput.files[0];
+      if (!nome || !file) {
+        alert("Preencha o nome e selecione uma foto.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        localStorage.setItem("nome", nome);
+        localStorage.setItem("foto", e.target.result);
+        mostrarChat();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function mostrarChat() {
+      loginDiv.style.display = "none";
+      chatDiv.style.display = "flex";
+    }
+
+    function enviar() {
+      const texto = mensagemInput.value.trim();
+      if (!texto) return;
+      const nome = localStorage.getItem("nome");
+      const foto = localStorage.getItem("foto");
+      db.push({ nome, foto, texto, tempo: Date.now() });
+      mensagemInput.value = "";
+    }
+
+    db.on("child_added", snap => {
+      const msg = snap.val();
+      const nome = localStorage.getItem("nome");
+      const foto = msg.foto || "";
+      const msgEl = document.createElement("div");
+      msgEl.className = "msg " + (msg.nome === nome ? "sent" : "received");
+
+      const img = document.createElement("img");
+      img.src = foto;
+
+      const text = document.createElement("div");
+      text.className = "text";
+      text.innerHTML = `<strong>${msg.nome}</strong><br>${msg.texto}`;
+
+      msgEl.appendChild(img);
+      msgEl.appendChild(text);
+      messagesDiv.appendChild(msgEl);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    function logout() {
+      localStorage.clear();
+      location.reload();
+    }
+
+    if (localStorage.getItem("nome") && localStorage.getItem("foto")) {
+      mostrarChat();
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+  </html>
+  
